@@ -2,7 +2,7 @@
   "name": "hapi-viper",
   "description": "viper like hapi plugin",
   "author": "Christian Blaschke <mail@platdesign.de>",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "dependencies": {
     "q": "^1.4.1"
   },
