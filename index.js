@@ -2,6 +2,9 @@
 
 // Deps
 var DI = require('./lib/DI');
+var is = require('is');
+
+var noop = function() {};
 
 /**
  * Plugin module: viper
@@ -17,18 +20,48 @@ module.exports = function register(plugin, options, next) {
 	plugin.handler('viper', function(route, config) {
 
 
-		// TODO: check if config is object or function
-		var controller = config;
+		if(is.fn(config)) {
 
-		return function(req, reply) {
+			// config is only a controller function
 
-			return viper.invoke(controller, { $req: req }, this)
-			.then(reply, function(err) {
-				console.log(err);
-				reply('Error');
-			});
+			return function(req, reply) {
 
-		};
+				return viper.invoke(config, { $req: req }, this)
+				.then(reply, function(err) {
+					console.log(err);
+					reply('Error');
+				});
+
+			};
+
+		} else if( is.object(config) ) {
+
+			// config is an object
+
+			return function(req, reply) {
+
+				var promise = viper.invoke(config.controller, { $req: req }, this)
+
+				if(config.template) {
+
+					promise = promise.then(function($scope) {
+						reply.view(config.template, $scope);
+					}, function(err) {
+						reply.view(config.errorTemplate || config.template, { $error:err });
+					});
+
+				} else {
+					promise = promise.then(reply, reply);
+				}
+
+				promise.catch(function(err) {
+					plugin.log(['error'], err.toString()+'\n'+err.stack);
+					reply(err);
+				});
+			};
+
+		}
+
 
 	});
 
