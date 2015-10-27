@@ -40,14 +40,20 @@ module.exports = function register(plugin, options, next) {
 
 			return function(req, reply) {
 
-				var promise = viper.invoke(config.controller, { $req: req }, this)
+				var promise = Promise.resolve({});
+
+				if(config.controller) {
+					promise = promise.then(function(){
+						return viper.invoke(config.controller, { $req: req }, this);
+					}.bind(this));
+				}
 
 				if(config.template) {
 
 					promise = promise.then(function($scope) {
-						reply.view(config.template, $scope);
+						return reply.view(config.template, $scope);
 					}, function(err) {
-						reply.view(config.errorTemplate || config.template, { $error:err });
+						return reply.view(config.errorTemplate || config.template, { $error:err });
 					});
 
 				} else {
