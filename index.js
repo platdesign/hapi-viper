@@ -3,6 +3,7 @@
 // Deps
 var DI = require('./lib/DI');
 var is = require('is');
+var Boom = require('boom');
 
 var noop = function() {};
 
@@ -28,9 +29,28 @@ module.exports = function register(plugin, options, next) {
 
 				return viper.invoke(config, { $req: req }, this)
 				.then(reply, function(err) {
-					console.log(err);
-					reply('Error');
-				});
+
+					if(err) {
+						plugin.log(['error', 'viper-handler'], err);
+
+						if(err.data && err.data.stack) {
+							console.log('\n', err.data.message, err.data.stack);
+						}
+
+						if(err.stack && err.message) {
+							console.log('\n', err.message, err.stack);
+						}
+
+						return Promise.reject(err);
+
+					} else {
+						plugin.log(['error', 'viper-handler', 'unknown']);
+						return Promise.reject( Boom.badImplementation('Unkown error occured') );
+					}
+
+
+				})
+				.catch(reply);
 
 			};
 
@@ -53,6 +73,7 @@ module.exports = function register(plugin, options, next) {
 					promise = promise.then(function($scope) {
 						return reply.view(config.template, $scope);
 					}, function(err) {
+						console.error(err);
 						return reply.view(config.errorTemplate || config.template, { $error:err });
 					});
 
@@ -66,7 +87,7 @@ module.exports = function register(plugin, options, next) {
 				});
 			};
 
-		}
+		};
 
 
 	});

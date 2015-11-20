@@ -4,6 +4,7 @@
   "author": "Christian Blaschke <mail@platdesign.de>",
   "version": "0.0.3",
   "dependencies": {
+    "boom": "^3.0.0",
     "is": "^3.1.0",
     "q": "^1.4.1"
   },
