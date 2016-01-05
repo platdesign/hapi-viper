@@ -3,6 +3,7 @@
 // Deps
 var DI = require('./lib/DI');
 var Boom = require('boom');
+var is = require('is');
 
 var ViperHandler = require('./lib/handler');
 
@@ -69,9 +70,7 @@ function Viper(server) {
 		var injector = di.serviceInjector.resolveInjector();
 
 		injector.provide('$req', request);
-		injector.provide('$payload', request.payload);
-		injector.provide('$query', request.query);
-		injector.provide('$params', request.params);
+
 
 		Object.keys(requestFactories).forEach(function(name) {
 			injector.factory(name, requestFactories[name]);
@@ -82,6 +81,18 @@ function Viper(server) {
 	this.requestFactory = function(name, factory) {
 		requestFactories[name] = factory;
 	};
+
+
+	this.plugin = function(module, options) {
+
+		if(!is.fn(module)) {
+			throw new Error('Plugin has to be a function');
+		}
+
+		module.call(this, options);
+
+	};
+
 
 
 	// Expose viper on server root object
