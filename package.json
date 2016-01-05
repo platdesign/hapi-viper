@@ -8,5 +8,8 @@
     "is": "^3.1.0",
     "q": "^1.4.1"
   },
-  "repository": "https://github.com/platdesign/hapi-viper.git"
+  "repository": "https://github.com/platdesign/hapi-viper.git",
+  "devDependencies": {
+    "hapi": "^12.0.0"
+  }
 }

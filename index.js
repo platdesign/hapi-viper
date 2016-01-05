@@ -2,8 +2,10 @@
 
 // Deps
 var DI = require('./lib/DI');
-var is = require('is');
 var Boom = require('boom');
+
+var ViperHandler = require('./lib/handler');
+
 
 var noop = function() {};
 
@@ -11,90 +13,11 @@ var noop = function() {};
  * Plugin module: viper
  *
  */
-module.exports = function register(plugin, options, next) {
+module.exports = function register(server, options, next) {
 
-	var viper = new Viper();
+	var viper = new Viper(server);
 
-	viper.value('$server', plugin);
-
-
-	plugin.handler('viper', function(route, config) {
-
-
-		if(is.fn(config)) {
-
-			// config is only a controller function
-
-			return function(req, reply) {
-
-				return viper.invoke(config, { $req: req }, this)
-				.then(reply, function(err) {
-
-					if(err) {
-						plugin.log(['error', 'viper-handler'], err);
-
-						if(err.data && err.data.stack) {
-							console.log('\n', err.data.message, err.data.stack);
-						}
-
-						if(err.stack && err.message) {
-							console.log('\n', err.message, err.stack);
-						}
-
-						return Promise.reject(err);
-
-					} else {
-						plugin.log(['error', 'viper-handler', 'unknown']);
-						return Promise.reject( Boom.badImplementation('Unkown error occured') );
-					}
-
-
-				})
-				.catch(reply);
-
-			};
-
-		} else if( is.object(config) ) {
-
-			// config is an object
-
-			return function(req, reply) {
-
-				var promise = Promise.resolve({});
-
-				if(config.controller) {
-					promise = promise.then(function(){
-						return viper.invoke(config.controller, { $req: req }, this);
-					}.bind(this));
-				}
-
-				if(config.template) {
-
-					promise = promise.then(function($scope) {
-						return reply.view(config.template, $scope);
-					}, function(err) {
-						console.error(err);
-						return reply.view(config.errorTemplate || config.template, { $error:err });
-					});
-
-				} else {
-					promise = promise.then(reply, reply);
-				}
-
-				promise.catch(function(err) {
-					plugin.log(['error'], err.toString()+'\n'+err.stack);
-					reply(err);
-				});
-			};
-
-		};
-
-
-	});
-
-
-
-	plugin.plugins.viper = viper;
+	server.handler('viper', ViperHandler(server, viper));
 
 	// finish plugin configuration
 	next();
@@ -111,13 +34,13 @@ module.exports.attributes = {
 
 
 
+function Viper(server) {
 
 
-
-
-function Viper() {
 
 	var di = DI();
+
+	this._di = di;
 
 	this.invoke = function(method, locals, scope) {
 		return di.serviceInjector.invoke(method, locals, scope);
@@ -136,7 +59,36 @@ function Viper() {
 	this.value = function(name, val) {
 		di.value(name, val);
 		return this;
-	}
+	};
+
+
+
+	var requestFactories = {};
+
+	this.createRequestInjector = function(request) {
+		var injector = di.serviceInjector.resolveInjector();
+
+		injector.provide('$req', request);
+		injector.provide('$payload', request.payload);
+		injector.provide('$query', request.query);
+		injector.provide('$params', request.params);
+
+		Object.keys(requestFactories).forEach(function(name) {
+			injector.factory(name, requestFactories[name]);
+		});
+		return injector;
+	};
+
+	this.requestFactory = function(name, factory) {
+		requestFactories[name] = factory;
+	};
+
+
+	// Expose viper on server root object
+	server.root.viper = this;
+
+	// Provide server as $server
+	this.value('$server', server.root);
 
 }
 
