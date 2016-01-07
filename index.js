@@ -1,14 +1,10 @@
 'use strict';
 
 // Deps
-var DI = require('./lib/DI');
 var Boom = require('boom');
-var is = require('is');
-
+var Viper = require('./lib/Viper');
 var ViperHandler = require('./lib/handler');
 
-
-var noop = function() {};
 
 /**
  * Plugin module: viper
@@ -16,7 +12,12 @@ var noop = function() {};
  */
 module.exports = function register(server, options, next) {
 
-	var viper = new Viper(server);
+	var viper = new Viper();
+
+	server.root.viper = viper;
+
+
+
 
 	server.handler('viper', ViperHandler(server, viper));
 
@@ -35,73 +36,76 @@ module.exports.attributes = {
 
 
 
-function Viper(server) {
 
 
 
-	var di = DI();
-
-	this._di = di;
-
-	this.invoke = function(method, locals, scope) {
-		return di.serviceInjector.invoke(method, locals, scope);
-	};
-
-	this.factory = function(name, factory) {
-		di.factory(name, factory);
-		return this;
-	};
-
-	this.provider = function(name, handler) {
-		di.provider(name, handler);
-		return this;
-	};
-
-	this.value = function(name, val) {
-		di.value(name, val);
-		return this;
-	};
+// function Viper(server) {
 
 
 
-	var requestFactories = {};
+// 	var di = DI();
 
-	this.createRequestInjector = function(request) {
-		var injector = di.serviceInjector.resolveInjector();
+// 	this._di = di;
 
-		injector.provide('$req', request);
+// 	this.invoke = function(method, locals, scope) {
+// 		return di.serviceInjector.invoke(method, locals, scope);
+// 	};
 
+// 	this.factory = function(name, factory) {
+// 		di.factory(name, factory);
+// 		return this;
+// 	};
 
-		Object.keys(requestFactories).forEach(function(name) {
-			injector.factory(name, requestFactories[name]);
-		});
-		return injector;
-	};
+// 	this.provider = function(name, handler) {
+// 		di.provider(name, handler);
+// 		return this;
+// 	};
 
-	this.requestFactory = function(name, factory) {
-		requestFactories[name] = factory;
-	};
-
-
-	this.plugin = function(module, options) {
-
-		if(!is.fn(module)) {
-			throw new Error('Plugin has to be a function');
-		}
-
-		module.call(this, options);
-
-	};
+// 	this.value = function(name, val) {
+// 		di.value(name, val);
+// 		return this;
+// 	};
 
 
 
-	// Expose viper on server root object
-	server.root.viper = this;
+// 	var requestFactories = {};
 
-	// Provide server as $server
-	this.value('$server', server.root);
+// 	this.createRequestInjector = function(request) {
+// 		var injector = di.serviceInjector.resolveInjector();
 
-}
+// 		injector.provide('$req', request);
+
+
+// 		Object.keys(requestFactories).forEach(function(name) {
+// 			injector.factory(name, requestFactories[name]);
+// 		});
+// 		return injector;
+// 	};
+
+// 	this.requestFactory = function(name, factory) {
+// 		requestFactories[name] = factory;
+// 	};
+
+
+// 	this.plugin = function(module, options) {
+
+// 		if(!is.fn(module)) {
+// 			throw new Error('Plugin has to be a function');
+// 		}
+
+// 		module.call(this, options);
+
+// 	};
+
+
+
+// 	// Expose viper on server root object
+// 	server.root.viper = this;
+
+// 	// Provide server as $server
+// 	this.value('$server', server.root);
+
+// }
 
 
 

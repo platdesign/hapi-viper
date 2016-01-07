@@ -19,37 +19,68 @@ server.connection({
 
 server.register(HapiViper, function(err) {
 
-	server.viper.factory('$users', function() {
-		console.log('created users');
-		return [];
-
-	});
 
 
-	server.viper.requestFactory('$user', function($req, $users) {
-		console.log('created')
-		return {
-			user: 'plati'
+	server.viper.provider('Account', function() {
+
+		console.log('instantiated AccountProvider')
+
+		var provider = this;
+
+		this.config = {
+			time: Date.now()
+		};
+
+		this.$get = function() {
+
+			console.log('instantiated AccountService')
+
+			var service = {
+				config: provider.config,
+				time: Date.now()
+			};
+
+			return service;
+
 		};
 
 	});
 
+
+
+	server.viper.factory('Profile', function(Account) {
+		console.log('instantiated ProfileService')
+
+		return {
+			name: Date.now(),
+			Account: Account
+		};
+	});
+
+
+
+	server.viper.get('AccountProvider').then(function(AccountProvider) {
+
+		AccountProvider.config.test = 123;
+
+	});
+
+
+
+
+
 	server.route({
 		method: 'GET',
-		path: '/{userId}',
+		path: '/',
 		handler: {
-			viper: function($user, $query, $params) {
-				return {
-					user: $user,
-					query: $query,
-					params: $params
-				};
+			viper: function(Profile) {
+				return Profile;
 			}
 		}
 	});
 
 
 	server.start(function(err) {
-		console.log(err);
+
 	});
 });
