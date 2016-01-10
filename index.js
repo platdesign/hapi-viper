@@ -16,7 +16,7 @@ module.exports = function register(server, options, next) {
 
 	server.root.viper = viper;
 
-
+	viper.$injector.provide('$server', server.root);
 
 
 	server.handler('viper', ViperHandler(server, viper));
